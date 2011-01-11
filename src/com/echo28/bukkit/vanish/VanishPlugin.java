@@ -1,10 +1,8 @@
 package com.echo28.bukkit.vanish;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.logging.Logger;
 
-import org.bukkit.Player;
 import org.bukkit.Server;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
@@ -26,8 +24,6 @@ public class VanishPlugin extends JavaPlugin
 	public boolean DISABLE_TP = true;
 	public boolean HIDE_USERS = false;
 	
-	private String NAME = "Vanish";
-	private String VERSION = "1.0";
 	private final VanishPlayerListener playerListener = new VanishPlayerListener(this);
 	private final Logger log = Logger.getLogger("Minecraft");
 

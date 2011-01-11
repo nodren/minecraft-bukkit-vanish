@@ -5,9 +5,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Logger;
 
+import net.minecraft.server.Packet20NamedEntitySpawn;
+import net.minecraft.server.Packet29DestroyEntity;
+
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Player;
+import org.bukkit.craftbukkit.CraftPlayer;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerListener;
@@ -54,54 +58,83 @@ public class VanishPlayerListener extends PlayerListener
 
 		if (split[0].equalsIgnoreCase("/vanish"))
 		{
-			if (split[1].equalsIgnoreCase("list")) {
+			if (split[1].equalsIgnoreCase("list"))
+			{
 				String message = "List of Invisible Players: ";
 				for (Player InvisiblePlayer : invisible.values())
 				{
 					message += InvisiblePlayer.getName() + ", ";
 				}
-				player.sendMessage(Color.RED + message.substring(0, message.length() - 2));
+				player.sendMessage(Color.RED
+						+ message.substring(0,
+								message.length() - 2));
 				event.setCancelled(true);
 				return;
 			}
 			vanish(player);
 			event.setCancelled(true);
 		}
-		else if (split[0].equalsIgnoreCase("/tp") || split[0].equalsIgnoreCase("/home") || split[0].equalsIgnoreCase("/spawn")
-				|| split[0].equalsIgnoreCase("/warp") || split[0].equalsIgnoreCase("/t"))
+		else if (split[0].equalsIgnoreCase("/tp")
+				|| split[0].equalsIgnoreCase("/home")
+				|| split[0].equalsIgnoreCase("/spawn")
+				|| split[0].equalsIgnoreCase("/warp")
+				|| split[0].equalsIgnoreCase("/t"))
 		{
-			if (split[0].equalsIgnoreCase("/tp") && split.length == 2 && plugin.DISABLE_TP)
+			if (split[0].equalsIgnoreCase("/tp")
+					&& split.length == 2 && plugin.DISABLE_TP)
 			{
 				// let's drop an error if they try and tp to someone invisible
 				// giving away their position.
-				Player tpPlayer = plugin.getServer().getPlayer(split[1]);
+				Player tpPlayer = plugin.getServer().getPlayer(
+						split[1]);
 				if (tpPlayer != null)
 				{
-					if (player.getName().equalsIgnoreCase(tpPlayer.getName()))
+					if (player.getName().equalsIgnoreCase(
+							tpPlayer.getName()))
 					{
-						player.sendMessage(Color.RED + "You're already here!");
+						player.sendMessage(Color.RED
+								+ "You're already here!");
 						event.setCancelled(true);
 					}
 					if (invisible.get(tpPlayer.getName()) != null)
 					{
 						// same message that /tp uses
-						String message = "Can't find user " + split[1] + ".";
+						String message = "Can't find user "
+								+ split[1] + ".";
 						player.sendMessage(Color.RED + message);
-						log.info(player.getName() + " tried to /tp to " + split[1] + " but they are invisible.");
+						log.info(player.getName()
+								+ " tried to /tp to " + split[1]
+								+ " but they are invisible.");
 						event.setCancelled(true);
 					}
 				}
 			}
 			updateInvisibleForAll();
 			Timer timer = new Timer();
-			Player[] playerList = plugin.getServer().getOnlinePlayers();
+			Player[] playerList = plugin.getServer()
+					.getOnlinePlayers();
 			int i = 0;
 			while (i < plugin.TOTAL_REFRESHES)
 			{
 				i++;
-				timer.schedule(new UpdateInvisibleTimerTask(playerList), i * 1000);
+				timer.schedule(new UpdateInvisibleTimerTask(
+						playerList), i * 1000);
 			}
 		}
+	}
+
+	private void invisible(Player p1, Player p2)
+	{
+		CraftPlayer hide = (CraftPlayer)p1;
+		CraftPlayer hideFrom = (CraftPlayer)p2;
+		hideFrom.getHandle().a.b(new Packet29DestroyEntity(hide.getHandle().g));
+	}
+
+	private void uninvisible(Player p1, Player p2)
+	{
+		CraftPlayer unHide = (CraftPlayer)p1;
+		CraftPlayer unHideFrom = (CraftPlayer)p2;
+		unHideFrom.getHandle().a.b(new Packet20NamedEntitySpawn(unHide.getHandle()));
 	}
 
 	public void vanish(Player player)
@@ -112,12 +145,14 @@ public class VanishPlayerListener extends PlayerListener
 			return;
 		}
 		invisible.put(player.getName(), player);
-		Player[] playerList = plugin.getServer().getOnlinePlayers();
+		Player[] playerList = plugin.getServer()
+				.getOnlinePlayers();
 		for (Player p : playerList)
 		{
-			if (getDistance(player, p) <= plugin.RANGE && !p.equals(player))
+			if (getDistance(player, p) <= plugin.RANGE
+					&& !p.equals(player))
 			{
-				p.delete(player);
+				invisible(player,p);
 			}
 		}
 		log.info(player.getName() + " disappeared.");
@@ -132,12 +167,14 @@ public class VanishPlayerListener extends PlayerListener
 			// make someone really disappear if there's any doubt, should remove
 			// cloning
 			updateInvisibleForAll();
-			Player[] playerList = plugin.getServer().getOnlinePlayers();
+			Player[] playerList = plugin.getServer()
+					.getOnlinePlayers();
 			for (Player p : playerList)
 			{
-				if (getDistance(player, p) < plugin.RANGE && !p.equals(player))
+				if (getDistance(player, p) < plugin.RANGE
+						&& !p.equals(player))
 				{
-					p.spawn(player);
+					uninvisible(player,p);
 				}
 			}
 			log.info(player.getName() + " reappeared.");
@@ -157,14 +194,16 @@ public class VanishPlayerListener extends PlayerListener
 
 	public void updateInvisibleForAll()
 	{
-		Player[] playerList = plugin.getServer().getOnlinePlayers();
+		Player[] playerList = plugin.getServer()
+				.getOnlinePlayers();
 		for (Player invisiblePlayer : invisible.values())
 		{
 			for (Player p : playerList)
 			{
-				if (getDistance(invisiblePlayer, p) <= plugin.RANGE && !p.equals(invisiblePlayer))
+				if (getDistance(invisiblePlayer, p) <= plugin.RANGE
+						&& !p.equals(invisiblePlayer))
 				{
-					p.delete(invisiblePlayer);
+					invisible(invisiblePlayer,p);
 				}
 			}
 		}
@@ -174,9 +213,10 @@ public class VanishPlayerListener extends PlayerListener
 	{
 		for (Player invisiblePlayer : invisible.values())
 		{
-			if (getDistance(invisiblePlayer, player) <= plugin.RANGE && !player.equals(invisiblePlayer))
+			if (getDistance(invisiblePlayer, player) <= plugin.RANGE
+					&& !player.equals(invisiblePlayer))
 			{
-				player.delete(invisiblePlayer);
+				invisible(invisiblePlayer,player);
 			}
 		}
 	}
@@ -185,7 +225,9 @@ public class VanishPlayerListener extends PlayerListener
 	{
 		Location loc1 = player1.getLocation();
 		Location loc2 = player1.getLocation();
-		return Math.sqrt(Math.pow(loc1.getX() - loc2.getX(), 2) + Math.pow(loc1.getY() - loc2.getY(), 2) + Math.pow(loc1.getZ() - loc2.getZ(), 2));
+		return Math.sqrt(Math.pow(loc1.getX() - loc2.getX(), 2)
+				+ Math.pow(loc1.getY() - loc2.getY(), 2)
+				+ Math.pow(loc1.getZ() - loc2.getZ(), 2));
 	}
 
 	private class UpdateInvisibleTimerTask extends TimerTask
@@ -204,9 +246,10 @@ public class VanishPlayerListener extends PlayerListener
 			{
 				for (Player p : playerList)
 				{
-					if (getDistance(invisiblePlayer, p) <= plugin.RANGE && !p.equals(invisiblePlayer))
+					if (getDistance(invisiblePlayer, p) <= plugin.RANGE
+							&& !p.equals(invisiblePlayer))
 					{
-						p.delete(invisiblePlayer);
+						invisible(invisiblePlayer,p);
 					}
 				}
 			}
