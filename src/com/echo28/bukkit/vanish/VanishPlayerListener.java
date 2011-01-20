@@ -3,6 +3,7 @@ package com.echo28.bukkit.vanish;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerListener;
+import org.bukkit.event.player.PlayerMoveEvent;
 
 
 /**
@@ -34,5 +35,11 @@ public class VanishPlayerListener extends PlayerListener
 	{
 		Player player = event.getPlayer();
 		plugin.invisible.remove(player);
+	}
+
+	@Override
+	public void onPlayerTeleport(PlayerMoveEvent event)
+	{
+		plugin.updateInvisibleOnTimer();
 	}
 }

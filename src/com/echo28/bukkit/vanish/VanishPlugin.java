@@ -2,6 +2,8 @@ package com.echo28.bukkit.vanish;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Logger;
 
 import net.minecraft.server.Packet20NamedEntitySpawn;
@@ -15,10 +17,14 @@ import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.config.Configuration;
+
+import com.bukkit.authorblues.GroupUsers.GroupUsers;
 
 
 /**
@@ -28,11 +34,10 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public class VanishPlugin extends JavaPlugin
 {
-	public int RANGE = 512;
-	public String AUTO_ON_GROUP = "";
-	public int TOTAL_REFRESHES = 10;
-	public boolean DISABLE_TP = false;
-	public boolean HIDE_USERS = false;
+	public int RANGE;
+	public String AUTO_ON_GROUP;
+	public int TOTAL_REFRESHES;
+	private Configuration config;
 
 	public HashMap<String, Player> invisible = new HashMap<String, Player>();
 
@@ -42,6 +47,10 @@ public class VanishPlugin extends JavaPlugin
 	public VanishPlugin(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader)
 	{
 		super(pluginLoader, instance, desc, folder, plugin, cLoader);
+		config = new Configuration(new File("plugins/vanish.yml"));
+		RANGE = config.getInt("range", 512);
+		TOTAL_REFRESHES = config.getInt("total_refreshes", 10);
+		AUTO_ON_GROUP = config.getString("auto_on_group", "");
 	}
 
 	public void onDisable()
@@ -55,6 +64,7 @@ public class VanishPlugin extends JavaPlugin
 		PluginManager pm = getServer().getPluginManager();
 		pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
 		pm.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
+		pm.registerEvent(Event.Type.PLAYER_TELEPORT, playerListener, Priority.Monitor, this);
 	}
 
 	@Override
@@ -62,6 +72,14 @@ public class VanishPlugin extends JavaPlugin
 	{
 		if (command.getName().equalsIgnoreCase("vanish"))
 		{
+			Plugin plugin = getServer().getPluginManager().getPlugin("GroupUsers");
+
+			if (plugin != null)
+			{
+				GroupUsers groupUsers = (GroupUsers) plugin;
+				if (!groupUsers.playerCanUseCommand(player, "/vanish")) { return false; }
+			}
+
 			if ((args.length == 2) && (args[1].equalsIgnoreCase("list")))
 			{
 				String message = "List of Invisible Players: ";
@@ -175,4 +193,25 @@ public class VanishPlugin extends JavaPlugin
 		Location loc2 = player1.getLocation();
 		return Math.sqrt(Math.pow(loc1.getX() - loc2.getX(), 2) + Math.pow(loc1.getY() - loc2.getY(), 2) + Math.pow(loc1.getZ() - loc2.getZ(), 2));
 	}
+
+	public void updateInvisibleOnTimer()
+	{
+		updateInvisibleForAll();
+		Timer timer = new Timer();
+		int i = 0;
+		while (i < TOTAL_REFRESHES)
+		{
+			i++;
+			timer.schedule(new UpdateInvisibleTimerTask(), i * 1000);
+		}
+	}
+
+	public class UpdateInvisibleTimerTask extends TimerTask
+	{
+		public void run()
+		{
+			updateInvisibleForAll();
+		}
+	}
+
 }

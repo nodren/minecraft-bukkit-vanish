@@ -1,6 +1,6 @@
 name: Vanish
 main: com.echo28.bukkit.vanish.VanishPlugin
-version: 1.1
+version: 1.2
 commands:
   vanish:
     description: Toggles your visibility
