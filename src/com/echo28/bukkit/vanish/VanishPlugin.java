@@ -77,10 +77,10 @@ public class VanishPlugin extends JavaPlugin
 			if (plugin != null)
 			{
 				GroupUsers groupUsers = (GroupUsers) plugin;
-				if (!groupUsers.playerCanUseCommand(player, "/vanish")) { return false; }
+				if (!groupUsers.playerCanUseCommand(player, "/vanish")) { return true; }
 			}
 
-			if ((args.length == 2) && (args[1].equalsIgnoreCase("list")))
+			if ((args.length == 1) && (args[0].equalsIgnoreCase("list")))
 			{
 				String message = "List of Invisible Players: ";
 				for (Player InvisiblePlayer : invisible.values())
