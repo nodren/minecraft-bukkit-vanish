@@ -25,6 +25,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
 
 import com.bukkit.authorblues.GroupUsers.GroupUsers;
+import com.echo28.bukkit.findme.FindMe;
 
 
 /**
@@ -129,6 +130,13 @@ public class VanishPlugin extends JavaPlugin
 		}
 		log.info(player.getName() + " disappeared.");
 		player.sendMessage(ChatColor.RED + "Poof!");
+
+		Plugin plugin = getServer().getPluginManager().getPlugin("FindMe");
+		if (plugin != null)
+		{
+			FindMe findMe = (FindMe) plugin;
+			findMe.hidePlayer(player);
+		}
 	}
 
 	public void reappear(Player player)
@@ -149,6 +157,13 @@ public class VanishPlugin extends JavaPlugin
 			}
 			log.info(player.getName() + " reappeared.");
 			player.sendMessage(ChatColor.RED + "You have reappeared!");
+
+			Plugin plugin = getServer().getPluginManager().getPlugin("FindMe");
+			if (plugin != null)
+			{
+				FindMe findMe = (FindMe) plugin;
+				findMe.unHidePlayer(player);
+			}
 		}
 	}
 
