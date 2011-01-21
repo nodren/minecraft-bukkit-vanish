@@ -48,6 +48,7 @@ public class VanishPlugin extends JavaPlugin
 	{
 		super(pluginLoader, instance, desc, folder, plugin, cLoader);
 		config = new Configuration(new File("plugins/vanish.yml"));
+		config.load();
 		RANGE = config.getInt("range", 512);
 		TOTAL_REFRESHES = config.getInt("total_refreshes", 10);
 		AUTO_ON_GROUP = config.getString("auto_on_group", "");
