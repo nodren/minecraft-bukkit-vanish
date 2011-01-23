@@ -28,7 +28,7 @@ public class VanishPlayerListener extends PlayerListener
 	{
 		Player player = event.getPlayer();
 		plugin.updateInvisible(player);
-		if (plugin.Permissions.Security.getGroup(player.getName()).equalsIgnoreCase(plugin.AUTO_ON_GROUP))
+		if ((plugin.perm != null) && (plugin.perm.Security.getGroup(player.getName()).equalsIgnoreCase(plugin.AUTO_ON_GROUP)))
 		{
 			log.info(plugin.getDescription().getName() + "Auto hiding " + player.getName() + "because he is in group " + plugin.AUTO_ON_GROUP);
 			plugin.vanish(player);

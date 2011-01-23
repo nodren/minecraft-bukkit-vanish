@@ -1,6 +1,7 @@
 package com.echo28.bukkit.vanish;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -35,11 +36,10 @@ import com.nijikokun.bukkit.Permissions.Permissions;
  */
 public class VanishPlugin extends JavaPlugin
 {
-	public static Permissions Permissions = null;
+	public static Permissions perm = null;
 	public int RANGE;
 	public String AUTO_ON_GROUP;
 	public int TOTAL_REFRESHES;
-	private Configuration config;
 
 	public HashMap<String, Player> invisible = new HashMap<String, Player>();
 
@@ -49,11 +49,23 @@ public class VanishPlugin extends JavaPlugin
 	public VanishPlugin(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader)
 	{
 		super(pluginLoader, instance, desc, folder, plugin, cLoader);
-		config = new Configuration(new File("plugins/vanish.yml"));
-		config.load();
-		RANGE = config.getInt("range", 512);
-		TOTAL_REFRESHES = config.getInt("total_refreshes", 10);
-		AUTO_ON_GROUP = config.getString("auto_on_group", "");
+
+		folder.mkdirs();
+
+		File yml = new File(getDataFolder(), "config.yml");
+		if (!yml.exists())
+		{
+			try
+			{
+				yml.createNewFile();
+			}
+			catch (IOException ex)
+			{
+			}
+		}
+		RANGE = getConfiguration().getInt("range", 512);
+		TOTAL_REFRESHES = getConfiguration().getInt("total_refreshes", 10);
+		AUTO_ON_GROUP = getConfiguration().getString("auto_on_group", "");
 	}
 
 	public void onDisable()
@@ -63,23 +75,37 @@ public class VanishPlugin extends JavaPlugin
 
 	public void onEnable()
 	{
-		log.info(getDescription().getName() + " " + getDescription().getVersion() + " loaded.");
+		setupPermissions();
+		
 		PluginManager pm = getServer().getPluginManager();
 		pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
 		pm.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
 		pm.registerEvent(Event.Type.PLAYER_TELEPORT, playerListener, Priority.Monitor, this);
+		log.info(getDescription().getName() + " " + getDescription().getVersion() + " loaded.");
 	}
 
 	public void setupPermissions()
 	{
-		Plugin test = this.getServer().getPluginManager().getPlugin("Permissions");
+		Plugin plugin = this.getServer().getPluginManager().getPlugin("Permissions");
 
-		if (this.Permissions == null)
+		if (perm == null)
 		{
-			if (test != null)
+			if (plugin != null)
 			{
-				this.Permissions = (Permissions) test;
+				perm = (Permissions) plugin;
 			}
+		}
+	}
+	
+	public boolean check(Player player, String permNode)
+	{
+		if (perm == null)
+		{
+			return true;
+		}
+		else
+		{
+			return perm.Security.permission(player, permNode);
 		}
 	}
 
@@ -90,7 +116,7 @@ public class VanishPlugin extends JavaPlugin
 		{
 			if ((args.length == 1) && (args[0].equalsIgnoreCase("list")))
 			{
-				if ((Permissions != null) && (!Permissions.Security.permission(player, "vanish.vanish.list"))) { return true; }
+				if (!check(player, "vanish.vanish.list")) { return true; }
 				String message = "List of Invisible Players: ";
 				for (Player InvisiblePlayer : invisible.values())
 				{
@@ -99,7 +125,7 @@ public class VanishPlugin extends JavaPlugin
 				player.sendMessage(ChatColor.RED + message.substring(0, message.length() - 2));
 				return true;
 			}
-			if ((Permissions != null) && (!Permissions.Security.permission(player, "vanish.vanish"))) { return true; }
+			if (!check(player, "vanish.vanish")) { return true; }
 			vanish(player);
 			return true;
 		}
