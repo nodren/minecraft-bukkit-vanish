@@ -24,8 +24,8 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
 
-import com.bukkit.authorblues.GroupUsers.GroupUsers;
 import com.echo28.bukkit.findme.FindMe;
+import com.nijikokun.bukkit.Permissions.Permissions;
 
 
 /**
@@ -35,6 +35,7 @@ import com.echo28.bukkit.findme.FindMe;
  */
 public class VanishPlugin extends JavaPlugin
 {
+	public static Permissions Permissions = null;
 	public int RANGE;
 	public String AUTO_ON_GROUP;
 	public int TOTAL_REFRESHES;
@@ -69,21 +70,27 @@ public class VanishPlugin extends JavaPlugin
 		pm.registerEvent(Event.Type.PLAYER_TELEPORT, playerListener, Priority.Monitor, this);
 	}
 
+	public void setupPermissions()
+	{
+		Plugin test = this.getServer().getPluginManager().getPlugin("Permissions");
+
+		if (this.Permissions == null)
+		{
+			if (test != null)
+			{
+				this.Permissions = (Permissions) test;
+			}
+		}
+	}
+
 	@Override
 	public boolean onCommand(Player player, Command command, String commandLabel, String[] args)
 	{
 		if (command.getName().equalsIgnoreCase("vanish"))
 		{
-			Plugin plugin = getServer().getPluginManager().getPlugin("GroupUsers");
-
-			if (plugin != null)
-			{
-				GroupUsers groupUsers = (GroupUsers) plugin;
-				if (!groupUsers.playerCanUseCommand(player, "/vanish")) { return true; }
-			}
-
 			if ((args.length == 1) && (args[0].equalsIgnoreCase("list")))
 			{
+				if ((Permissions != null) && (!Permissions.Security.permission(player, "vanish.vanish.list"))) { return true; }
 				String message = "List of Invisible Players: ";
 				for (Player InvisiblePlayer : invisible.values())
 				{
@@ -92,6 +99,7 @@ public class VanishPlugin extends JavaPlugin
 				player.sendMessage(ChatColor.RED + message.substring(0, message.length() - 2));
 				return true;
 			}
+			if ((Permissions != null) && (!Permissions.Security.permission(player, "vanish.vanish"))) { return true; }
 			vanish(player);
 			return true;
 		}

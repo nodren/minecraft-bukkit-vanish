@@ -1,5 +1,7 @@
 package com.echo28.bukkit.vanish;
 
+import java.util.logging.Logger;
+
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerListener;
@@ -14,6 +16,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 public class VanishPlayerListener extends PlayerListener
 {
 	private final VanishPlugin plugin;
+	private final Logger log = Logger.getLogger("Minecraft");
 
 	public VanishPlayerListener(VanishPlugin instance)
 	{
@@ -25,21 +28,24 @@ public class VanishPlayerListener extends PlayerListener
 	{
 		Player player = event.getPlayer();
 		plugin.updateInvisible(player);
-		/*
-		 * if (player.isInGroup(AUTO_ON_GROUP)) { if (plugin.isDebugging(player)) { player.sendMessage("Auto On group !"); } vanish(player); }
-		 */
+		if (plugin.Permissions.Security.getGroup(player.getName()).equalsIgnoreCase(plugin.AUTO_ON_GROUP))
+		{
+			log.info(plugin.getDescription().getName() + "Auto hiding " + player.getName() + "because he is in group " + plugin.AUTO_ON_GROUP);
+			plugin.vanish(player);
+		}
 	}
 
 	@Override
 	public void onPlayerQuit(PlayerEvent event)
 	{
 		Player player = event.getPlayer();
-		plugin.invisible.remove(player);
+		plugin.invisible.remove(player.getName());
 	}
 
 	@Override
 	public void onPlayerTeleport(PlayerMoveEvent event)
 	{
+		if (event.isCancelled()) { return; }
 		plugin.updateInvisibleOnTimer();
 	}
 }
