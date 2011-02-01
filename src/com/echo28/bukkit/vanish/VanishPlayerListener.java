@@ -15,15 +15,16 @@ import org.bukkit.event.player.PlayerMoveEvent;
  */
 public class VanishPlayerListener extends PlayerListener
 {
-	private final VanishPlugin plugin;
+	private final Vanish plugin;
 	private final Logger log = Logger.getLogger("Minecraft");
 
-	public VanishPlayerListener(VanishPlugin instance)
+	public VanishPlayerListener(Vanish instance)
 	{
 		plugin = instance;
 	}
 
 	@Override
+	@SuppressWarnings("static-access")
 	public void onPlayerJoin(PlayerEvent event)
 	{
 		Player player = event.getPlayer();

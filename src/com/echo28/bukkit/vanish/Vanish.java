@@ -14,6 +14,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -23,7 +24,6 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.config.Configuration;
 
 import com.echo28.bukkit.findme.FindMe;
 import com.nijikokun.bukkit.Permissions.Permissions;
@@ -34,7 +34,7 @@ import com.nijikokun.bukkit.Permissions.Permissions;
  * 
  * @author Nodren
  */
-public class VanishPlugin extends JavaPlugin
+public class Vanish extends JavaPlugin
 {
 	public static Permissions perm = null;
 	public int RANGE;
@@ -46,7 +46,7 @@ public class VanishPlugin extends JavaPlugin
 	private final VanishPlayerListener playerListener = new VanishPlayerListener(this);
 	private final Logger log = Logger.getLogger("Minecraft");
 
-	public VanishPlugin(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader)
+	public Vanish(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader)
 	{
 		super(pluginLoader, instance, desc, folder, plugin, cLoader);
 
@@ -76,7 +76,7 @@ public class VanishPlugin extends JavaPlugin
 	public void onEnable()
 	{
 		setupPermissions();
-		
+
 		PluginManager pm = getServer().getPluginManager();
 		pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
 		pm.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
@@ -96,7 +96,8 @@ public class VanishPlugin extends JavaPlugin
 			}
 		}
 	}
-	
+
+	@SuppressWarnings("static-access")
 	public boolean check(Player player, String permNode)
 	{
 		if (perm == null)
@@ -110,8 +111,9 @@ public class VanishPlugin extends JavaPlugin
 	}
 
 	@Override
-	public boolean onCommand(Player player, Command command, String commandLabel, String[] args)
+	public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args)
 	{
+		Player player = (Player) sender;
 		if (command.getName().equalsIgnoreCase("vanish"))
 		{
 			if ((args.length == 1) && (args[0].equalsIgnoreCase("list")))
@@ -120,7 +122,7 @@ public class VanishPlugin extends JavaPlugin
 				String message = "List of Invisible Players: ";
 				for (Player InvisiblePlayer : invisible.values())
 				{
-					message += InvisiblePlayer.getName() + ", ";
+					message += InvisiblePlayer.getDisplayName() + ", ";
 				}
 				player.sendMessage(ChatColor.RED + message.substring(0, message.length() - 2));
 				return true;
@@ -136,7 +138,7 @@ public class VanishPlugin extends JavaPlugin
 	{
 		CraftPlayer hide = (CraftPlayer) p1;
 		CraftPlayer hideFrom = (CraftPlayer) p2;
-		hideFrom.getHandle().a.b(new Packet29DestroyEntity(hide.getHandle().g));
+		hideFrom.getHandle().a.b(new Packet29DestroyEntity(hide.getHandle().id));
 	}
 
 	private void uninvisible(Player p1, Player p2)
