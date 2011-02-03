@@ -2,7 +2,8 @@ package com.echo28.bukkit.vanish;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Logger;
@@ -15,6 +16,7 @@ import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -41,7 +43,7 @@ public class Vanish extends JavaPlugin
 	public String AUTO_ON_GROUP;
 	public int TOTAL_REFRESHES;
 
-	public HashMap<String, Player> invisible = new HashMap<String, Player>();
+	public List<Player> invisible = new ArrayList<Player>();
 
 	private final VanishPlayerListener playerListener = new VanishPlayerListener(this);
 	private final Logger log = Logger.getLogger("Minecraft");
@@ -98,40 +100,79 @@ public class Vanish extends JavaPlugin
 	}
 
 	@SuppressWarnings("static-access")
-	public boolean check(Player player, String permNode)
+	public boolean check(CommandSender sender, String permNode)
 	{
-		if (perm == null)
+		if (sender instanceof Player)
+		{
+			if (perm == null)
+			{
+				if (sender.isOp()) { return true; }
+				return false;
+			}
+			else
+			{
+				Player player = (Player) sender;
+				return perm.Security.permission(player, permNode);
+			}
+		}
+		else if (sender instanceof ConsoleCommandSender)
 		{
 			return true;
 		}
 		else
 		{
-			return perm.Security.permission(player, permNode);
+			return false;
 		}
 	}
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args)
 	{
-		Player player = (Player) sender;
 		if (command.getName().equalsIgnoreCase("vanish"))
 		{
 			if ((args.length == 1) && (args[0].equalsIgnoreCase("list")))
 			{
-				if (!check(player, "vanish.vanish.list")) { return true; }
-				String message = "List of Invisible Players: ";
-				for (Player InvisiblePlayer : invisible.values())
-				{
-					message += InvisiblePlayer.getDisplayName() + ", ";
-				}
-				player.sendMessage(ChatColor.RED + message.substring(0, message.length() - 2));
+				list(sender);
 				return true;
 			}
-			if (!check(player, "vanish.vanish")) { return true; }
-			vanish(player);
+			vanishCommand(sender);
 			return true;
 		}
 		return false;
+	}
+
+	private void list(CommandSender sender)
+	{
+		if (!check(sender, "vanish.vanish.list")) { return; }
+		if (invisible.size() == 0)
+		{
+			sender.sendMessage(ChatColor.RED + "No invisible players found");
+			return;
+		}
+		String message = "List of Invisible Players: ";
+		int i = 0;
+		for (Player InvisiblePlayer : invisible)
+		{
+			message += InvisiblePlayer.getDisplayName();
+			i++;
+			if (i != invisible.size())
+			{
+				message += ", ";
+			}
+		}
+		sender.sendMessage(ChatColor.RED + message);
+	}
+
+	private void vanishCommand(CommandSender sender)
+	{
+		if (!check(sender, "vanish.vanish")) { return; }
+		if (sender instanceof Player)
+		{
+			Player player = (Player) sender;
+			vanish(player);
+			return;
+		}
+		sender.sendMessage("That doesn't work from here");
 	}
 
 	private void invisible(Player p1, Player p2)
@@ -150,12 +191,12 @@ public class Vanish extends JavaPlugin
 
 	public void vanish(Player player)
 	{
-		if (invisible.get(player.getName()) != null)
+		if (invisible.contains(player))
 		{
 			reappear(player);
 			return;
 		}
-		invisible.put(player.getName(), player);
+		invisible.add(player);
 		Player[] playerList = getServer().getOnlinePlayers();
 		for (Player p : playerList)
 		{
@@ -177,9 +218,9 @@ public class Vanish extends JavaPlugin
 
 	public void reappear(Player player)
 	{
-		if (invisible.get(player.getName()) != null)
+		if (invisible.contains(player))
 		{
-			invisible.remove(player.getName());
+			invisible.remove(player);
 			// make someone really disappear if there's any doubt, should remove
 			// cloning
 			updateInvisibleForAll();
@@ -206,7 +247,7 @@ public class Vanish extends JavaPlugin
 	public void reappearAll()
 	{
 		log.info("Everyone is going reappear.");
-		for (Player InvisiblePlayer : invisible.values())
+		for (Player InvisiblePlayer : invisible)
 		{
 			reappear(InvisiblePlayer);
 		}
@@ -216,7 +257,7 @@ public class Vanish extends JavaPlugin
 	public void updateInvisibleForAll()
 	{
 		Player[] playerList = getServer().getOnlinePlayers();
-		for (Player invisiblePlayer : invisible.values())
+		for (Player invisiblePlayer : invisible)
 		{
 			for (Player p : playerList)
 			{
@@ -230,7 +271,7 @@ public class Vanish extends JavaPlugin
 
 	public void updateInvisible(Player player)
 	{
-		for (Player invisiblePlayer : invisible.values())
+		for (Player invisiblePlayer : invisible)
 		{
 			if (getDistance(invisiblePlayer, player) <= RANGE && !player.equals(invisiblePlayer))
 			{
