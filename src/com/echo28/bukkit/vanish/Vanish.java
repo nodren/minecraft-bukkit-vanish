@@ -13,7 +13,6 @@ import net.minecraft.server.Packet29DestroyEntity;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -22,8 +21,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -42,17 +39,24 @@ public class Vanish extends JavaPlugin
 	public int RANGE;
 	public String AUTO_ON_GROUP;
 	public int TOTAL_REFRESHES;
+	public int REFRESH_TIMER;
+
+	private Timer timer = new Timer();
 
 	public List<Player> invisible = new ArrayList<Player>();
 
 	private final VanishPlayerListener playerListener = new VanishPlayerListener(this);
 	private final Logger log = Logger.getLogger("Minecraft");
 
-	public Vanish(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader)
+	public void onDisable()
 	{
-		super(pluginLoader, instance, desc, folder, plugin, cLoader);
+		timer.cancel();
+		log.info(getDescription().getName() + " " + getDescription().getVersion() + " unloaded.");
+	}
 
-		folder.mkdirs();
+	public void onEnable()
+	{
+		getDataFolder().mkdirs();
 
 		File yml = new File(getDataFolder(), "config.yml");
 		if (!yml.exists())
@@ -67,16 +71,9 @@ public class Vanish extends JavaPlugin
 		}
 		RANGE = getConfiguration().getInt("range", 512);
 		TOTAL_REFRESHES = getConfiguration().getInt("total_refreshes", 10);
+		REFRESH_TIMER = getConfiguration().getInt("refresh_timer", 2);
 		AUTO_ON_GROUP = getConfiguration().getString("auto_on_group", "");
-	}
 
-	public void onDisable()
-	{
-		log.info(getDescription().getName() + " " + getDescription().getVersion() + " unloaded.");
-	}
-
-	public void onEnable()
-	{
 		setupPermissions();
 
 		PluginManager pm = getServer().getPluginManager();
@@ -84,6 +81,8 @@ public class Vanish extends JavaPlugin
 		pm.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
 		pm.registerEvent(Event.Type.PLAYER_TELEPORT, playerListener, Priority.Monitor, this);
 		log.info(getDescription().getName() + " " + getDescription().getVersion() + " loaded.");
+
+		timer.schedule(new UpdateInvisibleTimerTask(true), (1000 * 60) * REFRESH_TIMER);
 	}
 
 	public void setupPermissions()
@@ -128,7 +127,7 @@ public class Vanish extends JavaPlugin
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args)
 	{
-		if (command.getName().equalsIgnoreCase("vanish"))
+		if ((command.getName().equalsIgnoreCase("vanish")) || (command.getName().equalsIgnoreCase("poof")))
 		{
 			if ((args.length == 1) && (args[0].equalsIgnoreCase("list")))
 			{
@@ -157,10 +156,10 @@ public class Vanish extends JavaPlugin
 			i++;
 			if (i != invisible.size())
 			{
-				message += ", ";
+				message += " ";
 			}
 		}
-		sender.sendMessage(ChatColor.RED + message);
+		sender.sendMessage(ChatColor.RED + message + ChatColor.WHITE + " ");
 	}
 
 	private void vanishCommand(CommandSender sender)
@@ -179,7 +178,7 @@ public class Vanish extends JavaPlugin
 	{
 		CraftPlayer hide = (CraftPlayer) p1;
 		CraftPlayer hideFrom = (CraftPlayer) p2;
-		hideFrom.getHandle().a.b(new Packet29DestroyEntity(hide.getHandle().id));
+		hideFrom.getHandle().a.b(new Packet29DestroyEntity(hide.getEntityId()));
 	}
 
 	private void uninvisible(Player p1, Player p2)
@@ -269,6 +268,15 @@ public class Vanish extends JavaPlugin
 		}
 	}
 
+	public void updateInvisibleForAll(boolean startTimer)
+	{
+		updateInvisibleForAll();
+		if (startTimer)
+		{
+			timer.schedule(new UpdateInvisibleTimerTask(true), (1000 * 60) * REFRESH_TIMER);
+		}
+	}
+
 	public void updateInvisible(Player player)
 	{
 		for (Player invisiblePlayer : invisible)
@@ -301,9 +309,21 @@ public class Vanish extends JavaPlugin
 
 	public class UpdateInvisibleTimerTask extends TimerTask
 	{
+		private boolean startTimer = false;
+
+		public UpdateInvisibleTimerTask()
+		{
+
+		}
+
+		public UpdateInvisibleTimerTask(boolean startTimer)
+		{
+			this.startTimer = startTimer;
+		}
+
 		public void run()
 		{
-			updateInvisibleForAll();
+			updateInvisibleForAll(startTimer);
 		}
 	}
 

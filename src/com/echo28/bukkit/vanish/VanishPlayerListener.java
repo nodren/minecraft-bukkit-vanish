@@ -40,7 +40,7 @@ public class VanishPlayerListener extends PlayerListener
 	public void onPlayerQuit(PlayerEvent event)
 	{
 		Player player = event.getPlayer();
-		plugin.invisible.remove(player.getName());
+		plugin.invisible.remove(player);
 	}
 
 	@Override
