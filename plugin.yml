@@ -1,6 +1,7 @@
 name: Vanish
 main: com.echo28.bukkit.vanish.Vanish
-version: 1.4.1
+version: 1.5.2
+author: Nodren
 commands:
   vanish:
     description: Toggles your visibility

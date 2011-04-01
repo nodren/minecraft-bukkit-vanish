@@ -1,11 +1,10 @@
 package com.echo28.bukkit.vanish;
 
-import java.util.logging.Logger;
-
 import org.bukkit.entity.Player;
-import org.bukkit.event.player.PlayerEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerListener;
-import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 
 
 /**
@@ -16,7 +15,6 @@ import org.bukkit.event.player.PlayerMoveEvent;
 public class VanishPlayerListener extends PlayerListener
 {
 	private final Vanish plugin;
-	private final Logger log = Logger.getLogger("Minecraft");
 
 	public VanishPlayerListener(Vanish instance)
 	{
@@ -24,27 +22,21 @@ public class VanishPlayerListener extends PlayerListener
 	}
 
 	@Override
-	@SuppressWarnings("static-access")
-	public void onPlayerJoin(PlayerEvent event)
+	public void onPlayerJoin(PlayerJoinEvent event)
 	{
 		Player player = event.getPlayer();
 		plugin.updateInvisible(player);
-		if ((plugin.perm != null) && (plugin.perm.Security.getGroup(player.getName()).equalsIgnoreCase(plugin.AUTO_ON_GROUP)))
-		{
-			log.info(plugin.getDescription().getName() + "Auto hiding " + player.getName() + "because he is in group " + plugin.AUTO_ON_GROUP);
-			plugin.vanish(player);
-		}
 	}
 
 	@Override
-	public void onPlayerQuit(PlayerEvent event)
+	public void onPlayerQuit(PlayerQuitEvent event)
 	{
 		Player player = event.getPlayer();
 		plugin.invisible.remove(player);
 	}
 
 	@Override
-	public void onPlayerTeleport(PlayerMoveEvent event)
+	public void onPlayerTeleport(PlayerTeleportEvent event)
 	{
 		if (event.isCancelled()) { return; }
 		plugin.updateInvisibleOnTimer();

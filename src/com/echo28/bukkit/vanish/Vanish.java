@@ -25,6 +25,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.echo28.bukkit.findme.FindMe;
+import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
 
 
@@ -35,9 +36,8 @@ import com.nijikokun.bukkit.Permissions.Permissions;
  */
 public class Vanish extends JavaPlugin
 {
-	public static Permissions perm = null;
+	public static PermissionHandler Permissions = null;
 	public int RANGE;
-	public String AUTO_ON_GROUP;
 	public int TOTAL_REFRESHES;
 	public int REFRESH_TIMER;
 
@@ -69,41 +69,45 @@ public class Vanish extends JavaPlugin
 			{
 			}
 		}
+		setupPermissions();
 		RANGE = getConfiguration().getInt("range", 512);
 		TOTAL_REFRESHES = getConfiguration().getInt("total_refreshes", 10);
 		REFRESH_TIMER = getConfiguration().getInt("refresh_timer", 2);
-		AUTO_ON_GROUP = getConfiguration().getString("auto_on_group", "");
-
-		setupPermissions();
 
 		PluginManager pm = getServer().getPluginManager();
 		pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
 		pm.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
 		pm.registerEvent(Event.Type.PLAYER_TELEPORT, playerListener, Priority.Monitor, this);
+
 		log.info(getDescription().getName() + " " + getDescription().getVersion() + " loaded.");
 
 		timer.schedule(new UpdateInvisibleTimerTask(true), (1000 * 60) * REFRESH_TIMER);
 	}
 
+	@SuppressWarnings("static-access")
 	public void setupPermissions()
 	{
-		Plugin plugin = this.getServer().getPluginManager().getPlugin("Permissions");
+		Plugin test = this.getServer().getPluginManager().getPlugin("Permissions");
 
-		if (perm == null)
+		if (this.Permissions == null)
 		{
-			if (plugin != null)
+			if (test != null)
 			{
-				perm = (Permissions) plugin;
+				this.getServer().getPluginManager().enablePlugin(test);
+				this.Permissions = ((Permissions) test).getHandler();
+			}
+			else
+			{
+				log.info(getDescription().getName() + " version " + getDescription().getVersion() + "not enabled. Permissions not detected");
 			}
 		}
 	}
 
-	@SuppressWarnings("static-access")
 	public boolean check(CommandSender sender, String permNode)
 	{
 		if (sender instanceof Player)
 		{
-			if (perm == null)
+			if (Permissions == null)
 			{
 				if (sender.isOp()) { return true; }
 				return false;
@@ -111,7 +115,7 @@ public class Vanish extends JavaPlugin
 			else
 			{
 				Player player = (Player) sender;
-				return perm.Security.permission(player, permNode);
+				return Permissions.has(player, permNode);
 			}
 		}
 		else if (sender instanceof ConsoleCommandSender)
@@ -176,6 +180,12 @@ public class Vanish extends JavaPlugin
 
 	private void invisible(Player p1, Player p2)
 	{
+		invisible(p1, p2, false);
+	}
+
+	private void invisible(Player p1, Player p2, boolean force)
+	{
+		if ((!force) && (check(p2, "vanish.dont.hide"))) { return; }
 		CraftPlayer hide = (CraftPlayer) p1;
 		CraftPlayer hideFrom = (CraftPlayer) p2;
 		hideFrom.getHandle().a.b(new Packet29DestroyEntity(hide.getEntityId()));
@@ -222,7 +232,7 @@ public class Vanish extends JavaPlugin
 			invisible.remove(player);
 			// make someone really disappear if there's any doubt, should remove
 			// cloning
-			updateInvisibleForAll();
+			updateInvisibleForPlayer(player, true);
 			Player[] playerList = getServer().getOnlinePlayers();
 			for (Player p : playerList)
 			{
@@ -251,6 +261,23 @@ public class Vanish extends JavaPlugin
 			reappear(InvisiblePlayer);
 		}
 		invisible.clear();
+	}
+
+	public void updateInvisibleForPlayer(Player player)
+	{
+		updateInvisibleForPlayer(player, false);
+	}
+
+	public void updateInvisibleForPlayer(Player player, boolean force)
+	{
+		Player[] playerList = getServer().getOnlinePlayers();
+		for (Player p : playerList)
+		{
+			if (getDistance(player, p) <= RANGE && !p.equals(player))
+			{
+				invisible(player, p, force);
+			}
+		}
 	}
 
 	public void updateInvisibleForAll()
